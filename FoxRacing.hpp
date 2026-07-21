@@ -234,10 +234,11 @@ public:
 		}
 
 		// auto object = fe::ModelLoader::LoadModel("C:/Users/Lasse/3D Objects/2001__bmw_m3_gtr_e46_special_thanks_for_1_3k.glb");
-		// auto object = fe::ModelLoader::LoadModel("C:/Users/Lasse/3D Objects/f-14a_tomcat_usa.glb");
-		auto object = fe::ModelLoader::LoadModel("C:/Users/Lasse/3D Objects/airbus_a320-200_v2.glb");
+		auto tomcat = fe::ModelLoader::LoadModel("C:/Users/Lasse/3D Objects/f-14a_tomcat_usa.glb");
+		tomcat->reverseWinding = true;
+		// auto object = fe::ModelLoader::LoadModel("C:/Users/Lasse/3D Objects/airbus_a320-200_v2.glb");
 
-		scene->AddObject(object);
+		scene->AddObject(tomcat);
 	}
 
 	bool freeCamera = false;
