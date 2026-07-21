@@ -238,7 +238,11 @@ public:
 		tomcat->reverseWinding = true;
 		// auto object = fe::ModelLoader::LoadModel("C:/Users/Lasse/3D Objects/airbus_a320-200_v2.glb");
 
-		scene->AddObject(tomcat);
+		// scene->AddObject(tomcat);
+
+		auto lambo = fe::ModelLoader::LoadModel("C:/Users/Lasse/3D Objects/free__lamborghini_terzo_millennio_wind_tunnel.glb");
+		scene->AddObject(lambo);
+
 	}
 
 	bool freeCamera = false;
