@@ -222,6 +222,26 @@ public:
 		}
 	}
 
+	void AddMeshColliders(fe::Object* obj) {
+		for (auto& mesh : obj->meshes) {
+			std::vector<glm::vec3> positions;
+			mesh->GetPositions(positions);
+			if (!positions.empty()) {
+				glm::mat4 world = obj->GetModelMatrix();
+				std::vector<glm::vec3> worldPos;
+				worldPos.reserve(positions.size());
+				for (const auto& v : positions)
+					worldPos.push_back(glm::vec3(world * glm::vec4(v, 1.0f)));
+				auto physObj = GetPhysicsEngine()->CreateObject(worldPos, mesh->GetIndices());
+				mesh->SetPhysicsObject(std::move(physObj));
+			}
+		}
+		obj->isStatic = true;
+		for (auto& child : obj->children) {
+			AddMeshColliders(child.get());
+		}
+	}
+
 	void LoadModels() {
 
 		// Player
@@ -233,15 +253,23 @@ public:
 			this->player->physicsObject->SetPosition(this->player->state.position);
 		}
 
-		// auto object = fe::ModelLoader::LoadModel("C:/Users/Lasse/3D Objects/2001__bmw_m3_gtr_e46_special_thanks_for_1_3k.glb");
-		auto tomcat = fe::ModelLoader::LoadModel("C:/Users/Lasse/3D Objects/f-14a_tomcat_usa.glb");
-		tomcat->reverseWinding = true;
-		// auto object = fe::ModelLoader::LoadModel("C:/Users/Lasse/3D Objects/airbus_a320-200_v2.glb");
+		// Load terrain with mesh collider
+		auto terrain = fe::ModelLoader::LoadModel("C:/Users/Lasse/3D Objects/road_with_trees.glb");
+		if (terrain) {
+			scene->AddObject(terrain);
+			AddMeshColliders(terrain.get());
+		}
 
-		// scene->AddObject(tomcat);
-
+		// Load Lamborghini and give it a box physics body so it sits on the terrain
 		auto lambo = fe::ModelLoader::LoadModel("C:/Users/Lasse/3D Objects/1988_lamborghini_countach.glb");
-		scene->AddObject(lambo);
+		if (lambo) {
+			lambo->state.position = glm::vec3(0.0f, 5.0f, 0.0f);
+			scene->AddObject(lambo);
+			lambo->SetPhysicsObject(GetPhysicsEngine()->CreateObject(glm::vec3(1.8f, 0.8f, 4.0f), true));
+			if (lambo->physicsObject) {
+				lambo->physicsObject->SetPosition(lambo->state.position);
+			}
+		}
 
 	}
 
