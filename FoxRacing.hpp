@@ -310,12 +310,12 @@ public:
 		float height = 4.0f;
 		glm::quat rot = lambo->physicsObject ? lambo->physicsObject->GetRotation() : lambo->state.orientation;
 		glm::vec3 carPos = lambo->state.position;
-		glm::vec3 forward = rot * glm::vec3(0.0f, 0.0f, -1.0f);
-		forward.y = 0.0f;
-		if (glm::length(forward) > 0.001f) forward = glm::normalize(forward);
-		else forward = glm::vec3(0.0f, 0.0f, -1.0f);
-		camera->SetPos(carPos - forward * distance + glm::vec3(0.0f, height, 0.0f));
-		camera->LookAt(carPos + forward * 3.0f);
+		glm::vec3 forward = rot * glm::vec3(0.0f, 0.0f, 1.0f);
+			forward.y = 0.0f;
+			if (glm::length(forward) > 0.001f) forward = glm::normalize(forward);
+			else forward = glm::vec3(0.0f, 0.0f, 1.0f);
+			camera->SetPos(carPos - forward * distance + glm::vec3(0.0f, height, 0.0f));
+			camera->LookAt(carPos + forward * 3.0f);
 	}
 
 	void ProcessInput() {
@@ -361,10 +361,10 @@ public:
 			if (window->IsKeyDown(SDL_SCANCODE_D) || window->IsKeyDown(SDL_SCANCODE_RIGHT)) steer = -2.5f;
 
 			glm::quat rot = lambo->physicsObject->GetRotation();
-			glm::vec3 forward = rot * glm::vec3(0.0f, 0.0f, -1.0f);
+			glm::vec3 forward = rot * glm::vec3(0.0f, 0.0f, 1.0f);
 			forward.y = 0.0f;
 			if (glm::length(forward) > 0.001f) forward = glm::normalize(forward);
-			else forward = glm::vec3(0.0f, 0.0f, -1.0f);
+			else forward = glm::vec3(0.0f, 0.0f, 1.0f);
 
 			glm::vec3 vel = forward * accel;
 			vel.y = lambo->physicsObject->GetLinearVelocity().y;
