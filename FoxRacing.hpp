@@ -20,6 +20,7 @@
 #include <EditableGame.hpp>
 #include <Primitives.hpp>
 #include <Sensors/Accelerometer.hpp>
+#include <physics/PhysicsVehicle.hpp>
 #include <Graphics/VulkanDevice.hpp>
 #ifdef FE_INCLUDE_OPENVR
 #include <openvr/OpenVR.hpp>
@@ -43,6 +44,7 @@ public:
 	std::vector<fe::Joystick> joysicks;
 
 	std::shared_ptr<fe::Object> lambo;
+	fe::PhysicsVehicle* carVehicle = nullptr;
 	std::vector<std::shared_ptr<fe::Object>> barrierWalls;
 
 	static constexpr int MAZE_COLS = 8;
@@ -280,6 +282,9 @@ public:
 		lambo->physicsObject->SetPosition(lambo->state.position);
 		lambo->physicsObject->SetLinearVelocity(glm::vec3(0.0f));
 		lambo->physicsObject->SetAngularVelocity(glm::vec3(0.0f));
+		if (carVehicle) {
+			carVehicle->SetDriverInput(0.0f, 0.0f, 0.0f, 0.0f);
+		}
 	}
 
 	void ScaleObject(fe::Object* obj, float s) {
@@ -301,11 +306,26 @@ public:
 		if (lambo) {
 			lambo->state.position = glm::vec3(0.0f, 5.0f, 0.0f);
 			scene->AddObject(lambo);
-			lambo->SetPhysicsObject(GetPhysicsEngine()->CreateObject(glm::vec3(1.8f, 0.8f, 4.0f), true, true));
+			lambo->SetPhysicsObject(GetPhysicsEngine()->CreateObject(glm::vec3(1.8f, 0.6f, 4.0f), true, true));
 			if (lambo->physicsObject) {
 				lambo->physicsObject->SetPosition(lambo->state.position);
-				lambo->physicsObject->SetFriction(0.3f);
-				lambo->physicsObject->SetDamping(0.1f, 0.5f);
+
+				std::vector<fe::PhysicsVehicle::WheelConfig> wheels;
+				auto wc = [](glm::vec3 pos, bool steer, bool driven) {
+					fe::PhysicsVehicle::WheelConfig w;
+					w.position = pos; w.radius = 0.35f; w.width = 0.25f;
+					w.suspensionMaxLength = 0.3f;
+					w.suspensionFrequency = 1.5f;
+					w.suspensionDamping = 0.5f;
+					w.friction = 1.0f;
+					w.isSteering = steer; w.isDriven = driven;
+					return w;
+				};
+				wheels.push_back(wc(glm::vec3(-0.75f, -0.15f, 1.5f), true, false));
+				wheels.push_back(wc(glm::vec3( 0.75f, -0.15f, 1.5f), true, false));
+				wheels.push_back(wc(glm::vec3(-0.75f, -0.15f, -1.5f), false, true));
+				wheels.push_back(wc(glm::vec3( 0.75f, -0.15f, -1.5f), false, true));
+				carVehicle = GetPhysicsEngine()->CreateVehicle(lambo->physicsObject.get(), wheels);
 			}
 		}
 
@@ -370,31 +390,14 @@ public:
 			}
 		}
 
-		if (!freeCamera && lambo && lambo->physicsObject) {
-			float accelForce = 0.0f;
-			float steer = 0.0f;
-			if (window->IsKeyDown(SDL_SCANCODE_W) || window->IsKeyDown(SDL_SCANCODE_UP)) accelForce = 35000.0f;
-			if (window->IsKeyDown(SDL_SCANCODE_S) || window->IsKeyDown(SDL_SCANCODE_DOWN)) accelForce = -15000.0f;
-			if (window->IsKeyDown(SDL_SCANCODE_A) || window->IsKeyDown(SDL_SCANCODE_LEFT)) steer = 2.0f;
-			if (window->IsKeyDown(SDL_SCANCODE_D) || window->IsKeyDown(SDL_SCANCODE_RIGHT)) steer = -2.0f;
-
-			glm::quat rot = lambo->physicsObject->GetRotation();
-			glm::vec3 forward = rot * glm::vec3(0.0f, 0.0f, 1.0f);
-			if (glm::length(forward) > 0.001f) forward = glm::normalize(forward);
-			else forward = glm::vec3(0.0f, 0.0f, 1.0f);
-
-			lambo->physicsObject->AddForce(forward * accelForce);
-
-			glm::vec3 currentAngVel = lambo->physicsObject->GetAngularVelocity();
-			lambo->physicsObject->SetAngularVelocity(glm::vec3(currentAngVel.x, steer, currentAngVel.z));
-
-			glm::vec3 vel = lambo->physicsObject->GetLinearVelocity();
-			glm::vec3 right = glm::cross(forward, glm::vec3(0.0f, 1.0f, 0.0f));
-			if (glm::length(right) > 0.001f) {
-				right = glm::normalize(right);
-				float sideways = glm::dot(vel, right);
-				lambo->physicsObject->AddLinearVelocity(-right * sideways);
-			}
+		if (!freeCamera && carVehicle) {
+			float forward = 0.0f, right = 0.0f, brake = 0.0f;
+			if (window->IsKeyDown(SDL_SCANCODE_W) || window->IsKeyDown(SDL_SCANCODE_UP)) forward = 1.0f;
+			if (window->IsKeyDown(SDL_SCANCODE_S) || window->IsKeyDown(SDL_SCANCODE_DOWN)) forward = -0.5f;
+			if (window->IsKeyDown(SDL_SCANCODE_A) || window->IsKeyDown(SDL_SCANCODE_LEFT)) right = -1.0f;
+			if (window->IsKeyDown(SDL_SCANCODE_D) || window->IsKeyDown(SDL_SCANCODE_RIGHT)) right = 1.0f;
+			if (window->IsKeyDown(SDL_SCANCODE_SPACE)) brake = 1.0f;
+			carVehicle->SetDriverInput(forward, right, brake, 0.0f);
 		}
 
 		if (window->IsKeyDown(SDL_SCANCODE_ESCAPE)) window->StopMouseCapture();
