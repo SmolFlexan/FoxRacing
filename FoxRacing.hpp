@@ -296,6 +296,8 @@ public:
 			lambo->SetPhysicsObject(GetPhysicsEngine()->CreateObject(glm::vec3(1.8f, 0.8f, 4.0f), true, true));
 			if (lambo->physicsObject) {
 				lambo->physicsObject->SetPosition(lambo->state.position);
+				lambo->physicsObject->SetFriction(0.3f);
+				lambo->physicsObject->SetDamping(0.1f, 0.5f);
 			}
 		}
 
@@ -303,19 +305,18 @@ public:
 	}
 
 	bool freeCamera = false;
+	float orbitYaw = 0.0f;
+	float orbitPitch = -20.0f;
+	float orbitDistance = 10.0f;
 
 	void SyncCameraToCar() {
 		if (!lambo || freeCamera) return;
-		float distance = 8.0f;
-		float height = 4.0f;
-		glm::quat rot = lambo->physicsObject ? lambo->physicsObject->GetRotation() : lambo->state.orientation;
 		glm::vec3 carPos = lambo->state.position;
-		glm::vec3 forward = rot * glm::vec3(0.0f, 0.0f, 1.0f);
-			forward.y = 0.0f;
-			if (glm::length(forward) > 0.001f) forward = glm::normalize(forward);
-			else forward = glm::vec3(0.0f, 0.0f, 1.0f);
-			camera->SetPos(carPos - forward * distance + glm::vec3(0.0f, height, 0.0f));
-			camera->LookAt(carPos + forward * 3.0f);
+		glm::mat4 rot = glm::rotate(glm::mat4(1.0f), glm::radians(orbitYaw), glm::vec3(0.0f, 1.0f, 0.0f));
+		rot = glm::rotate(rot, glm::radians(orbitPitch), glm::vec3(1.0f, 0.0f, 0.0f));
+		glm::vec3 offset = glm::vec3(rot * glm::vec4(0.0f, 0.0f, orbitDistance, 1.0f));
+		camera->SetPos(carPos + offset);
+		camera->LookAt(carPos);
 	}
 
 	void ProcessInput() {
@@ -337,6 +338,15 @@ public:
 			case SDL_EVENT_WINDOW_RESIZED:
 			case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
 				break;
+				case SDL_EVENT_MOUSE_MOTION:
+				{
+					if (!window->IsCapturingMouse() || freeCamera) break;
+					float sensitivity = 0.2f;
+					orbitYaw -= event.motion.xrel * sensitivity;
+					orbitPitch -= event.motion.yrel * sensitivity;
+					orbitPitch = std::clamp(orbitPitch, -89.0f, 89.0f);
+					break;
+				}
 				case SDL_EVENT_KEY_DOWN:
 					if (event.key.key == SDLK_F11) {
 						window->ToggleFullscreen();
@@ -353,12 +363,12 @@ public:
 		}
 
 		if (!freeCamera && lambo && lambo->physicsObject) {
-			float accel = 0.0f;
+			float accelForce = 0.0f;
 			float steer = 0.0f;
-			if (window->IsKeyDown(SDL_SCANCODE_W) || window->IsKeyDown(SDL_SCANCODE_UP)) accel = 15.0f;
-			if (window->IsKeyDown(SDL_SCANCODE_S) || window->IsKeyDown(SDL_SCANCODE_DOWN)) accel = -8.0f;
-			if (window->IsKeyDown(SDL_SCANCODE_A) || window->IsKeyDown(SDL_SCANCODE_LEFT)) steer = 2.5f;
-			if (window->IsKeyDown(SDL_SCANCODE_D) || window->IsKeyDown(SDL_SCANCODE_RIGHT)) steer = -2.5f;
+			if (window->IsKeyDown(SDL_SCANCODE_W) || window->IsKeyDown(SDL_SCANCODE_UP)) accelForce = 35000.0f;
+			if (window->IsKeyDown(SDL_SCANCODE_S) || window->IsKeyDown(SDL_SCANCODE_DOWN)) accelForce = -15000.0f;
+			if (window->IsKeyDown(SDL_SCANCODE_A) || window->IsKeyDown(SDL_SCANCODE_LEFT)) steer = 2.0f;
+			if (window->IsKeyDown(SDL_SCANCODE_D) || window->IsKeyDown(SDL_SCANCODE_RIGHT)) steer = -2.0f;
 
 			glm::quat rot = lambo->physicsObject->GetRotation();
 			glm::vec3 forward = rot * glm::vec3(0.0f, 0.0f, 1.0f);
@@ -366,10 +376,18 @@ public:
 			if (glm::length(forward) > 0.001f) forward = glm::normalize(forward);
 			else forward = glm::vec3(0.0f, 0.0f, 1.0f);
 
-			glm::vec3 vel = forward * accel;
-			vel.y = lambo->physicsObject->GetLinearVelocity().y;
-			lambo->physicsObject->SetLinearVelocity(vel);
-			lambo->physicsObject->SetAngularVelocity(glm::vec3(0.0f, steer, 0.0f));
+			lambo->physicsObject->AddForce(forward * accelForce);
+
+			glm::vec3 currentAngVel = lambo->physicsObject->GetAngularVelocity();
+			lambo->physicsObject->SetAngularVelocity(glm::vec3(currentAngVel.x, steer, currentAngVel.z));
+
+			glm::vec3 vel = lambo->physicsObject->GetLinearVelocity();
+			glm::vec3 right = glm::cross(forward, glm::vec3(0.0f, 1.0f, 0.0f));
+			if (glm::length(right) > 0.001f) {
+				right = glm::normalize(right);
+				float sideways = glm::dot(vel, right);
+				lambo->physicsObject->AddLinearVelocity(-right * sideways);
+			}
 		}
 
 		if (window->IsKeyDown(SDL_SCANCODE_ESCAPE)) window->StopMouseCapture();
