@@ -246,7 +246,7 @@ public:
 	}
 
 	void CreateBarrierWalls() {
-		float size = 200.0f;
+		float size = 500.0f;
 		float height = 5.0f;
 		float thick = 1.0f;
 		glm::vec3 col(0.0f);
@@ -282,10 +282,18 @@ public:
 		lambo->physicsObject->SetAngularVelocity(glm::vec3(0.0f));
 	}
 
+	void ScaleObject(fe::Object* obj, float s) {
+		obj->state.scale *= s;
+		for (auto& child : obj->children)
+			ScaleObject(child.get(), s);
+	}
+
 	void LoadModels() {
+		float worldScale = 2.5f;
 		auto terrain = fe::ModelLoader::LoadModel("C:/Users/Lasse/3D Objects/road_with_trees.glb");
 		if (terrain) {
 			scene->AddObject(terrain);
+			ScaleObject(terrain.get(), worldScale);
 			AddMeshColliders(terrain.get());
 		}
 
