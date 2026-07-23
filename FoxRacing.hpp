@@ -297,6 +297,7 @@ public:
 		float worldScale = 1.35f;
 		auto terrain = fe::ModelLoader::LoadModel("resources/models/road_with_trees.glb");
 		if (terrain) {
+			terrain->state.position = glm::vec3(0.0f, 45.0f, 0.0f);
 			scene->AddObject(terrain);
 			ScaleObject(terrain.get(), worldScale);
 			AddMeshColliders(terrain.get());
