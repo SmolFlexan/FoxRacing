@@ -295,14 +295,14 @@ public:
 
 	void LoadModels() {
 		float worldScale = 1.35f;
-		auto terrain = fe::ModelLoader::LoadModel("C:/Users/Lasse/3D Objects/road_with_trees.glb");
+		auto terrain = fe::ModelLoader::LoadModel("resources/models/road_with_trees.glb");
 		if (terrain) {
 			scene->AddObject(terrain);
 			ScaleObject(terrain.get(), worldScale);
 			AddMeshColliders(terrain.get());
 		}
 
-		lambo = fe::ModelLoader::LoadModel("C:/Users/Lasse/3D Objects/1988_lamborghini_countach.glb");
+		lambo = fe::ModelLoader::LoadModel("resources/models/1988_lamborghini_countach.glb");
 		if (lambo) {
 			lambo->state.position = glm::vec3(0.0f, 5.0f, 0.0f);
 			scene->AddObject(lambo);
