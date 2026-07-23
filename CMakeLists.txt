@@ -106,8 +106,8 @@ endif()
 # ---------------------------------------------------------------
 # Copy all runtime resources (glsl shaders, textures) to build output
 # ---------------------------------------------------------------
-set(RESOURCE_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/resources)
-set(RESOURCE_OUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/resources)
+set(RESOURCE_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/$<CONFIG>/resources)
+set(RESOURCE_OUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/resources)
 
 add_custom_target(CopyResources_FoxRacing ALL
 	COMMAND ${CMAKE_COMMAND} -E copy_directory ${RESOURCE_SRC_DIR} ${RESOURCE_OUT_DIR}
@@ -125,8 +125,8 @@ find_program(GLSLC glslc HINTS
 if(GLSLC)
 	message(STATUS "Found glslc: ${GLSLC}")
 
-	set(SHADER_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/resources/shaders)
-	set(SHADER_OUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/resources/shaders)
+	set(SHADER_SRC_DIR ${RESOURCE_SRC_DIR}/shaders)
+	set(SHADER_OUT_DIR ${RESOURCE_OUT_DIR}/shaders)
 	file(MAKE_DIRECTORY ${SHADER_OUT_DIR})
 
 	set(SHADER_SOURCES
